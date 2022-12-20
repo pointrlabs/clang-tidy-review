@@ -92,6 +92,15 @@ def load_clang_tidy_warnings():
         return {}
 
 
+def load_clang_tidy_warnings(fixes_file: str):
+    """Read clang-tidy warnings from FIXES_FILE. Can be produced by build_clang_tidy_warnings"""
+    try:
+        with open(fixes_file, "r") as fixes_file_handle:
+            return yaml.safe_load(fixes_file_handle)
+    except FileNotFoundError:
+        return {}
+
+
 class PullRequest:
     """Add some convenience functions not in PyGithub"""
 
@@ -244,7 +253,7 @@ def make_file_offset_lookup(filenames):
     return lookup
 
 
-def get_diagnostic_file_path(clang_tidy_diagnostic, build_dir):
+def get_diagnostic_file_path(clang_tidy_diagnostic):
 
     # Sometimes, clang-tidy gives us an absolute path, so everything is fine.
     # Sometimes however it gives us a relative path that is realtive to the
@@ -269,14 +278,6 @@ def get_diagnostic_file_path(clang_tidy_diagnostic, build_dir):
                 )
             else:
                 return os.path.normpath(os.path.abspath(file_path))
-
-    # Pre-clang-tidy-9 format
-    elif "FilePath" in clang_tidy_diagnostic:
-        file_path = clang_tidy_diagnostic["FilePath"]
-        if file_path == "":
-            return ""
-        else:
-            return os.path.normpath(os.path.abspath(os.path.join(build_dir, file_path)))
 
     else:
         return ""
@@ -546,7 +547,7 @@ def make_comment_from_diagnostic(
 
 
 def create_review_file(
-    clang_tidy_warnings, diff_lookup, offset_lookup, build_dir
+    clang_tidy_warnings, diff_lookup, offset_lookup
 ) -> Optional[PRReview]:
     """Create a Github review from a set of clang-tidy diagnostics"""
 
@@ -568,16 +569,16 @@ def create_review_file(
         comment_body, end_line = make_comment_from_diagnostic(
             diagnostic["DiagnosticName"],
             diagnostic_message,
-            get_diagnostic_file_path(diagnostic, build_dir),
+            get_diagnostic_file_path(diagnostic),
             offset_lookup,
             notes=diagnostic.get("Notes", []),
         )
 
-        rel_path = str(try_relative(get_diagnostic_file_path(diagnostic, build_dir)))
+        rel_path = str(try_relative(get_diagnostic_file_path(diagnostic)))
         # diff lines are 1-indexed
         source_line = 1 + find_line_number_from_offset(
             offset_lookup,
-            get_diagnostic_file_path(diagnostic, build_dir),
+            get_diagnostic_file_path(diagnostic),
             diagnostic_message["FileOffset"],
         )
 
@@ -610,6 +611,45 @@ def create_review_file(
         "comments": comments,
     }
     return review
+
+
+def create_review(
+    pull_request: PullRequest,
+    fixes_file: str
+) -> Optional[PRReview]:
+    """Given a pre-generated fixes file creates a review.
+    If no files were changed, or no warnings could be found, None will be returned.
+
+    """
+
+    diff = pull_request.get_pr_diff()
+    print(f"\nDiff from GitHub PR:\n{diff}\n")
+
+    changed_files = [filename.target_file[2:] for filename in diff]
+    files = changed_files
+
+    if files == []:
+        print("No files to check!")
+        return None
+
+    print(f"Checking these files: {files}", flush=True)
+
+    # Read and parse the CLANG_TIDY_FIXES file
+    clang_tidy_warnings = load_clang_tidy_warnings(fixes_file)
+
+    print("clang-tidy had the following warnings:\n", clang_tidy_warnings, flush=True)
+
+    diff_lookup = make_file_line_lookup(diff)
+    offset_lookup = make_file_offset_lookup(files)
+
+    with message_group("Creating review from warnings"):
+        review = create_review_file(
+            clang_tidy_warnings, diff_lookup, offset_lookup
+        )
+        with open(REVIEW_FILE, "w") as review_file:
+            json.dump(review, review_file)
+
+        return review
 
 
 def create_review(
@@ -671,7 +711,7 @@ def create_review(
 
     with message_group("Creating review from warnings"):
         review = create_review_file(
-            clang_tidy_warnings, diff_lookup, offset_lookup, build_dir
+            clang_tidy_warnings, diff_lookup, offset_lookup
         )
         with open(REVIEW_FILE, "w") as review_file:
             json.dump(review, review_file)

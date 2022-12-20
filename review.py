@@ -28,38 +28,24 @@ BAD_CHARS_APT_PACKAGES_PATTERN = "[;&|($]"
 def main(
     repo,
     pr_number,
-    build_dir,
-    clang_tidy_checks,
-    clang_tidy_binary,
-    config_file,
     token,
-    include,
-    exclude,
+    fixes_file,
     max_comments,
     lgtm_comment_body,
-    split_workflow: bool,
-    dry_run: bool = False,
+    dry_run: bool = False
 ):
 
     pull_request = PullRequest(repo, pr_number, token)
 
     review = create_review(
         pull_request,
-        build_dir,
-        clang_tidy_checks,
-        clang_tidy_binary,
-        config_file,
-        include,
-        exclude,
+        fixes_file
     )
 
     with message_group("Saving metadata"):
         save_metadata(pr_number)
 
-    if split_workflow:
-        print("split_workflow is enabled, not posting review")
-    else:
-        post_review(pull_request, review, max_comments, lgtm_comment_body, dry_run)
+    post_review(pull_request, review, max_comments, lgtm_comment_body, dry_run)
 
 
 def fix_absolute_paths(build_compile_commands, base_dir):
@@ -175,46 +161,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Remove any enclosing quotes and extra whitespace
-    exclude = strip_enclosing_quotes(args.exclude).split(",")
-    include = strip_enclosing_quotes(args.include).split(",")
-
-    if args.apt_packages:
-        # Try to make sure only 'apt install' is run
-        apt_packages = re.split(BAD_CHARS_APT_PACKAGES_PATTERN, args.apt_packages)[
-            0
-        ].split(",")
-        with message_group(f"Installing additional packages: {apt_packages}"):
-            subprocess.run(["apt-get", "update"])
-            subprocess.run(
-                ["apt-get", "install", "-y", "--no-install-recommends"] + apt_packages
-            )
-
-    build_compile_commands = f"{args.build_dir}/compile_commands.json"
-
-    cmake_command = strip_enclosing_quotes(args.cmake_command)
-
-    # If we run CMake as part of the action, then we know the paths in
-    # the compile_commands.json file are going to be correct
-    if cmake_command:
-        with message_group(f"Running cmake: {cmake_command}"):
-            subprocess.run(cmake_command, shell=True, check=True)
-
-    elif os.path.exists(build_compile_commands):
-        fix_absolute_paths(build_compile_commands, args.base_dir)
-
     main(
         repo=args.repo,
         pr_number=args.pr,
-        build_dir=args.build_dir,
-        clang_tidy_checks=args.clang_tidy_checks,
-        clang_tidy_binary=args.clang_tidy_binary,
-        config_file=args.config_file,
         token=args.token,
-        include=include,
-        exclude=exclude,
+        fixes_file=args.fixes_file,
         max_comments=args.max_comments,
         lgtm_comment_body=strip_enclosing_quotes(args.lgtm_comment_body),
-        split_workflow=args.split_workflow,
-        dry_run=args.dry_run,
+        dry_run=args.dry_run
     )
