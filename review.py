@@ -155,7 +155,7 @@ if __name__ == "__main__":
         "--lgtm-comment-body",
         help="Message to post on PR if no issues are found. An empty string will post no LGTM comment.",
         type=str,
-        default='clang-tidy review says "All clean, LGTM! :+1:"',
+        default='`clang-tidy` found no issues, all clean :+1:',
     )
     parser.add_argument(
         "--split_workflow",

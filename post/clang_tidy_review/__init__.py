@@ -540,7 +540,7 @@ def make_comment_from_diagnostic(
     code_blocks += format_notes(notes, offset_lookup)
 
     comment_body = (
-        f"warning: {diagnostic['Message']} [{diagnostic_name}]\n{code_blocks}"
+        f":warning: {diagnostic['Message']} [{diagnostic_name}]\n{code_blocks}"
     )
 
     return comment_body, end_line + 1
@@ -606,7 +606,7 @@ def create_review_file(
             )
 
     review: PRReview = {
-        "body": "clang-tidy made some suggestions",
+        "body": ":warning: `clang-tidy` found some issues",
         "event": "COMMENT",
         "comments": comments,
     }
