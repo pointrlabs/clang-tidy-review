@@ -93,6 +93,11 @@ if __name__ == "__main__":
         default=".",
     )
     parser.add_argument(
+        "--fixes_file",
+        help="Path to pre-generated clang-tidy fixes file",
+        default="",
+    )
+    parser.add_argument(
         "--clang_tidy_checks",
         help="checks argument",
         default="'-*,performance-*,readability-*,bugprone-*,clang-analyzer-*,cppcoreguidelines-*,mpi-*,misc-*'",
