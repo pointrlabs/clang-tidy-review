@@ -30,6 +30,8 @@ def main(
     pr_number,
     token,
     fixes_file,
+    include,
+    exclude,
     max_comments,
     lgtm_comment_body,
     dry_run: bool = False
@@ -39,7 +41,9 @@ def main(
 
     review = create_review_on_existing_fixes(
         pull_request,
-        fixes_file
+        fixes_file,
+        include,
+        exclude
     )
 
     with message_group("Saving metadata"):
@@ -166,11 +170,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Remove any enclosing quotes and extra whitespace
+    exclude = strip_enclosing_quotes(args.exclude).split(",")
+    include = strip_enclosing_quotes(args.include).split(",")
+
     main(
         repo=args.repo,
         pr_number=args.pr,
         token=args.token,
         fixes_file=args.fixes_file,
+        include=include,
+        exclude=exclude,
         max_comments=args.max_comments,
         lgtm_comment_body=strip_enclosing_quotes(args.lgtm_comment_body),
         dry_run=args.dry_run

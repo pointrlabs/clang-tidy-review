@@ -615,7 +615,9 @@ def create_review_file(
 
 def create_review_on_existing_fixes(
     pull_request: PullRequest,
-    fixes_file: str
+    fixes_file: str,
+    include: List[str],
+    exclude: List[str]
 ) -> Optional[PRReview]:
     """Given a pre-generated fixes file creates a review.
     If no files were changed, or no warnings could be found, None will be returned.
@@ -626,7 +628,13 @@ def create_review_on_existing_fixes(
     print(f"\nDiff from GitHub PR:\n{diff}\n")
 
     changed_files = [filename.target_file[2:] for filename in diff]
-    files = changed_files
+    files = []
+    for pattern in include:
+        files.extend(fnmatch.filter(changed_files, pattern))
+        print(f"include: {pattern}, file list now: {files}")
+    for pattern in exclude:
+        files = [f for f in files if not fnmatch.fnmatch(f, pattern)]
+        print(f"exclude: {pattern}, file list now: {files}")
 
     if files == []:
         print("No files to check!")
