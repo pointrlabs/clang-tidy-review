@@ -16,7 +16,7 @@ from post.clang_tidy_review import (
     PullRequest,
     message_group,
     strip_enclosing_quotes,
-    create_review,
+    create_review_on_existing_fixes,
     save_metadata,
     post_review,
 )
