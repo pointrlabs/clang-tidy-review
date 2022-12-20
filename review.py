@@ -174,6 +174,7 @@ if __name__ == "__main__":
     exclude = strip_enclosing_quotes(args.exclude).split(",")
     include = strip_enclosing_quotes(args.include).split(",")
 
+    fixes_file = args.fixes_file
     if os.path.exists(fixes_file):
         fix_absolute_paths(fixes_file, args.base_dir)
 
@@ -181,7 +182,7 @@ if __name__ == "__main__":
         repo=args.repo,
         pr_number=args.pr,
         token=args.token,
-        fixes_file=args.fixes_file,
+        fixes_file=fixes_file,
         include=include,
         exclude=exclude,
         max_comments=args.max_comments,
