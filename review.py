@@ -52,9 +52,9 @@ def main(
     post_review(pull_request, review, max_comments, lgtm_comment_body, dry_run)
 
 
-def fix_absolute_paths(build_compile_commands, base_dir):
-    """Update absolute paths in compile_commands.json to new location, if
-    compile_commands.json was created outside the Actions container
+def fix_absolute_paths(fixes_file, base_dir):
+    """Update absolute paths in fixes file to new location, if
+    fixes file was created outside the Actions container
     """
 
     basedir = pathlib.Path(base_dir).resolve()
@@ -63,20 +63,20 @@ def fix_absolute_paths(build_compile_commands, base_dir):
     if basedir == newbasedir:
         return
 
-    print(f"Found '{build_compile_commands}', updating absolute paths")
+    print(f"Found '{fixes_file}', updating absolute paths")
     # We might need to change some absolute paths if we're inside
     # a docker container
-    with open(build_compile_commands, "r") as f:
-        compile_commands = json.load(f)
+    with open(fixes_file, "r") as f:
+        fixes = f.read()
 
     print(f"Replacing '{basedir}' with '{newbasedir}'", flush=True)
 
-    modified_compile_commands = json.dumps(compile_commands).replace(
+    modified_fixes = fixes.replace(
         str(basedir), str(newbasedir)
     )
 
-    with open(build_compile_commands, "w") as f:
-        f.write(modified_compile_commands)
+    with open(fixes_file, "w") as f:
+        f.write(modified_fixes)
 
 
 if __name__ == "__main__":
@@ -173,6 +173,9 @@ if __name__ == "__main__":
     # Remove any enclosing quotes and extra whitespace
     exclude = strip_enclosing_quotes(args.exclude).split(",")
     include = strip_enclosing_quotes(args.include).split(",")
+
+    if os.path.exists(fixes_file):
+        fix_absolute_paths(fixes_file, args.base_dir)
 
     main(
         repo=args.repo,
