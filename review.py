@@ -37,7 +37,7 @@ def main(
 
     pull_request = PullRequest(repo, pr_number, token)
 
-    review = create_review(
+    review = create_review_on_existing_fixes(
         pull_request,
         fixes_file
     )

@@ -613,7 +613,7 @@ def create_review_file(
     return review
 
 
-def create_review(
+def create_review_on_existing_fixes(
     pull_request: PullRequest,
     fixes_file: str
 ) -> Optional[PRReview]:
