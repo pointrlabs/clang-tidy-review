@@ -41,6 +41,7 @@ inputs:
 outputs:
   total_comments:
     description: 'Total number of warnings from clang-tidy'
+    value: ${{ steps.run-review.outputs.total_comments }}
 
 runs:
   using: composite
@@ -52,7 +53,8 @@ runs:
     - name: Install Python dependencies
       shell: bash
       run: pip install -r ${{ github.action_path }}/requirements.txt
-    - name: Run action
+    - name: Run clang-tidy review
+      id: run-review
       shell: bash
       run: >-
         ${{ github.action_path }}/review.py
@@ -65,7 +67,3 @@ runs:
         --exclude='${{ inputs.exclude }}'
         --max-comments=${{ inputs.max_comments }}
         --lgtm-comment-body='${{ inputs.lgtm_comment_body }}'
-    - name: Print output
-      shell: bash
-      run: |
-        cat ${GITHUB_OUTPUT}
