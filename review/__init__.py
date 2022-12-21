@@ -24,7 +24,6 @@ from github.PaginatedList import PaginatedList
 from typing import List, Optional, TypedDict
 
 DIFF_HEADER_LINE_LENGTH = 5
-FIXES_FILE = "clang_tidy_review.yaml"
 METADATA_FILE = "clang-tidy-review-metadata.json"
 REVIEW_FILE = "clang-tidy-review-output.json"
 
@@ -54,46 +53,8 @@ class PRReview(TypedDict):
     comments: List[PRReviewComment]
 
 
-def build_clang_tidy_warnings(
-    line_filter, build_dir, clang_tidy_checks, clang_tidy_binary, config_file, files
-) -> None:
-    """Run clang-tidy on the given files and save output into FIXES_FILE"""
-
-    if config_file != "":
-        config = f'-config-file="{config_file}"'
-    else:
-        config = f"-checks={clang_tidy_checks}"
-
-    print(f"Using config: {config}")
-
-    command = f"{clang_tidy_binary} -p={build_dir} {config} -line-filter={line_filter} {files} --export-fixes={FIXES_FILE}"
-
-    start = datetime.datetime.now()
-    try:
-        with message_group(f"Running:\n\t{command}"):
-            subprocess.run(
-                command, capture_output=True, shell=True, check=True, encoding="utf-8"
-            )
-    except subprocess.CalledProcessError as e:
-        print(
-            f"\n\nclang-tidy failed with return code {e.returncode} and error:\n{e.stderr}\nOutput was:\n{e.stdout}"
-        )
-    end = datetime.datetime.now()
-
-    print(f"Took: {end - start}")
-
-
-def load_clang_tidy_warnings():
-    """Read clang-tidy warnings from FIXES_FILE. Can be produced by build_clang_tidy_warnings"""
-    try:
-        with open(FIXES_FILE, "r") as fixes_file:
-            return yaml.safe_load(fixes_file)
-    except FileNotFoundError:
-        return {}
-
-
 def load_clang_tidy_warnings(fixes_file: str):
-    """Read clang-tidy warnings from FIXES_FILE. Can be produced by build_clang_tidy_warnings"""
+    """Read clang-tidy warnings from given file"""
     try:
         with open(fixes_file, "r") as fixes_file_handle:
             return yaml.safe_load(fixes_file_handle)
@@ -613,7 +574,7 @@ def create_review_file(
     return review
 
 
-def create_review_on_existing_fixes(
+def create_review(
     pull_request: PullRequest,
     fixes_file: str,
     include: List[str],
@@ -644,73 +605,6 @@ def create_review_on_existing_fixes(
 
     # Read and parse the CLANG_TIDY_FIXES file
     clang_tidy_warnings = load_clang_tidy_warnings(fixes_file)
-
-    print("clang-tidy had the following warnings:\n", clang_tidy_warnings, flush=True)
-
-    diff_lookup = make_file_line_lookup(diff)
-    offset_lookup = make_file_offset_lookup(files)
-
-    with message_group("Creating review from warnings"):
-        review = create_review_file(
-            clang_tidy_warnings, diff_lookup, offset_lookup
-        )
-        with open(REVIEW_FILE, "w") as review_file:
-            json.dump(review, review_file)
-
-        return review
-
-
-def create_review(
-    pull_request: PullRequest,
-    build_dir: str,
-    clang_tidy_checks: str,
-    clang_tidy_binary: str,
-    config_file: str,
-    include: List[str],
-    exclude: List[str],
-) -> Optional[PRReview]:
-    """Given the parameters, runs clang-tidy and creates a review.
-    If no files were changed, or no warnings could be found, None will be returned.
-
-    """
-
-    diff = pull_request.get_pr_diff()
-    print(f"\nDiff from GitHub PR:\n{diff}\n")
-
-    changed_files = [filename.target_file[2:] for filename in diff]
-    files = []
-    for pattern in include:
-        files.extend(fnmatch.filter(changed_files, pattern))
-        print(f"include: {pattern}, file list now: {files}")
-    for pattern in exclude:
-        files = [f for f in files if not fnmatch.fnmatch(f, pattern)]
-        print(f"exclude: {pattern}, file list now: {files}")
-
-    if files == []:
-        print("No files to check!")
-        return None
-
-    print(f"Checking these files: {files}", flush=True)
-
-    line_ranges = get_line_ranges(diff, files)
-    if line_ranges == "[]":
-        print("No lines added in this PR!")
-        return None
-
-    print(f"Line filter for clang-tidy:\n{line_ranges}\n")
-
-    # Run clang-tidy with the configured parameters and produce the CLANG_TIDY_FIXES file
-    build_clang_tidy_warnings(
-        line_ranges,
-        build_dir,
-        clang_tidy_checks,
-        clang_tidy_binary,
-        config_file,
-        '"' + '" "'.join(files) + '"',
-    )
-
-    # Read and parse the CLANG_TIDY_FIXES file
-    clang_tidy_warnings = load_clang_tidy_warnings()
 
     print("clang-tidy had the following warnings:\n", clang_tidy_warnings, flush=True)
 
@@ -847,9 +741,12 @@ def post_review(
             pull_request.post_lgtm_comment(lgtm_comment_body)
         return 0
 
-    print(f"::set-output name=total_comments::{len(review['comments'])}")
-
     total_comments = len(review["comments"])
+
+    # Set total_comments output
+    if "GITHUB_OUTPUT" in os.environ:
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            print(f'total_comments={total_comments}', file=f)
 
     print("Removing already posted or extra comments", flush=True)
     trimmed_review = cull_comments(pull_request, review, max_comments)

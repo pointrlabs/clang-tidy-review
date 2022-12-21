@@ -12,17 +12,14 @@ import pathlib
 import re
 import subprocess
 
-from post.clang_tidy_review import (
+from review import (
     PullRequest,
     message_group,
     strip_enclosing_quotes,
-    create_review_on_existing_fixes,
+    create_review,
     save_metadata,
     post_review,
 )
-
-
-BAD_CHARS_APT_PACKAGES_PATTERN = "[;&|($]"
 
 
 def main(
@@ -39,7 +36,7 @@ def main(
 
     pull_request = PullRequest(repo, pr_number, token)
 
-    review = create_review_on_existing_fixes(
+    review = create_review(
         pull_request,
         fixes_file,
         include,
@@ -85,30 +82,15 @@ if __name__ == "__main__":
     )
     parser.add_argument("--repo", help="Repo name in form 'owner/repo'")
     parser.add_argument("--pr", help="PR number", type=int)
-    parser.add_argument(
-        "--clang_tidy_binary", help="clang-tidy binary", default="clang-tidy-14"
-    )
-    parser.add_argument(
-        "--build_dir", help="Directory with compile_commands.json", default="."
-    )
+    parser.add_argument("--token", help="GitHub authentication token")
     parser.add_argument(
         "--base_dir",
-        help="Absolute path of initial working directory if compile_commands.json generated outside of Action",
+        help="Absolute path to initial working directory to fix absolute paths in clang-tidy fixes file",
         default=".",
     )
     parser.add_argument(
         "--fixes_file",
         help="Path to pre-generated clang-tidy fixes file",
-        default="",
-    )
-    parser.add_argument(
-        "--clang_tidy_checks",
-        help="checks argument",
-        default="'-*,performance-*,readability-*,bugprone-*,clang-analyzer-*,cppcoreguidelines-*,mpi-*,misc-*'",
-    )
-    parser.add_argument(
-        "--config_file",
-        help="Path to .clang-tidy config file. If not empty, takes precedence over --clang_tidy_checks",
         default="",
     )
     parser.add_argument(
@@ -125,27 +107,6 @@ if __name__ == "__main__":
         default="",
     )
     parser.add_argument(
-        "--apt-packages",
-        help="Comma-separated list of apt packages to install",
-        type=str,
-        default="",
-    )
-    parser.add_argument(
-        "--cmake-command",
-        help="If set, run CMake as part of the action with this command",
-        type=str,
-        default="",
-    )
-
-    def bool_argument(user_input):
-        user_input = str(user_input).upper()
-        if user_input == "TRUE":
-            return True
-        if user_input == "FALSE":
-            return False
-        raise ValueError("Invalid value passed to bool_argument")
-
-    parser.add_argument(
         "--max-comments",
         help="Maximum number of comments to post at once",
         type=int,
@@ -157,13 +118,6 @@ if __name__ == "__main__":
         type=str,
         default='`clang-tidy` found no issues, all clean :+1:',
     )
-    parser.add_argument(
-        "--split_workflow",
-        help="Only generate but don't post the review, leaving it for the second workflow. Relevant when receiving PRs from forks that don't have the required permissions to post reviews.",
-        type=bool_argument,
-        default=False,
-    )
-    parser.add_argument("--token", help="github auth token")
     parser.add_argument(
         "--dry-run", help="Run and generate review, but don't post", action="store_true"
     )
