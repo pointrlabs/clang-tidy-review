@@ -744,7 +744,7 @@ def post_review(
     total_comments = len(review["comments"])
 
     # Set total_comments output
-    if "GITHUB_OUTPUT" in os.environ:
+    if 'GITHUB_OUTPUT' in os.environ:
         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
             print(f'total_comments={total_comments}', file=f)
 

@@ -67,3 +67,7 @@ runs:
         --exclude='${{ inputs.exclude }}'
         --max-comments=${{ inputs.max_comments }}
         --lgtm-comment-body='${{ inputs.lgtm_comment_body }}'
+    - name: Print output
+      shell: bash
+      run: |
+        echo "Output: ${GITHUB_OUTPUT}"
