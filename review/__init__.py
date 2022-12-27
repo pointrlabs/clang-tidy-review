@@ -147,6 +147,7 @@ class PullRequest:
         try:
             post_review_response.raise_for_status()
         except requests.exceptions.HTTPError as e:
+            print(e.response.text)
             if e.response.status_code == 403:
                 print(
                     "::error title=Missing permissions::This workflow does not have "

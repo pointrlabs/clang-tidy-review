@@ -65,8 +65,8 @@ runs:
         --repo=${{ inputs.repo }}
         --pr=${{ inputs.pr }}
         --token=${{ inputs.token }}
-        --base_dir=${{ inputs.base_dir }}
-        --fixes_file=${{ inputs.fixes_file }}
+        --base-dir=${{ inputs.base_dir }}
+        --fixes-file=${{ inputs.fixes_file }}
         --include='${{ inputs.include }}'
         --exclude='${{ inputs.exclude }}'
         --max-comments=${{ inputs.max_comments }}
