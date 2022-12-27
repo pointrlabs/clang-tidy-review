@@ -578,7 +578,8 @@ def create_review(
     pull_request: PullRequest,
     fixes_file: str,
     include: List[str],
-    exclude: List[str]
+    exclude: List[str],
+    artifacts_dir: str
 ) -> Optional[PRReview]:
     """Given a pre-generated fixes file creates a review.
     If no files were changed, or no warnings could be found, None will be returned.
@@ -615,40 +616,21 @@ def create_review(
         review = create_review_file(
             clang_tidy_warnings, diff_lookup, offset_lookup
         )
-        with open(REVIEW_FILE, "w") as review_file:
+        review_file_path = os.path.join(artifacts_dir, REVIEW_FILE)
+        with open(review_file_path, "w") as review_file:
             json.dump(review, review_file)
 
         return review
 
 
-def load_metadata() -> Metadata:
-    """Load metadata from the METADATA_FILE path"""
-
-    with open(METADATA_FILE, "r") as metadata_file:
-        return json.load(metadata_file)
-
-
-def save_metadata(pr_number: int) -> None:
+def save_metadata(pr_number: int, artifacts_dir: str) -> None:
     """Save metadata to the METADATA_FILE path"""
 
     metadata: Metadata = {"pr_number": pr_number}
 
-    with open(METADATA_FILE, "w") as metadata_file:
+    metadata_file_path = os.path.join(artifacts_dir, METADATA_FILE)
+    with open(metadata_file_path, "w") as metadata_file:
         json.dump(metadata, metadata_file)
-
-
-def load_review() -> Optional[PRReview]:
-    """Load review output from the standard REVIEW_FILE path.
-    This file contains
-
-    """
-
-    with open(REVIEW_FILE, "r") as review_file:
-        payload = json.load(review_file)
-        if payload:
-            return payload
-
-        return None
 
 
 def get_line_ranges(diff, files):

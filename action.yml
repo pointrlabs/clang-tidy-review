@@ -37,6 +37,10 @@ inputs:
     description: 'Message to post on PR if no issues are found. An empty string will post no LGTM comment.'
     required: false
     default: '`clang-tidy` found no issues, all clean :+1:'
+  artifacts_dir:
+    description: 'Directory to save artifacts in'
+    default: ${{ github.workspace }}
+    required: false
   
 outputs:
   total_comments:
@@ -67,3 +71,4 @@ runs:
         --exclude='${{ inputs.exclude }}'
         --max-comments=${{ inputs.max_comments }}
         --lgtm-comment-body='${{ inputs.lgtm_comment_body }}'
+        --artifacts-dir=${{ inputs.artifacts_dir }}

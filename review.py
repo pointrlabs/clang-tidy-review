@@ -31,6 +31,7 @@ def main(
     exclude,
     max_comments,
     lgtm_comment_body,
+    artifacts_dir,
     dry_run: bool = False
 ):
 
@@ -40,11 +41,12 @@ def main(
         pull_request,
         fixes_file,
         include,
-        exclude
+        exclude,
+        artifacts_dir
     )
 
     with message_group("Saving metadata"):
-        save_metadata(pr_number)
+        save_metadata(pr_number, artifacts_dir)
 
     post_review(pull_request, review, max_comments, lgtm_comment_body, dry_run)
 
@@ -84,12 +86,12 @@ if __name__ == "__main__":
     parser.add_argument("--pr", help="PR number", type=int)
     parser.add_argument("--token", help="GitHub authentication token")
     parser.add_argument(
-        "--base_dir",
+        "--base-dir",
         help="Absolute path to initial working directory to fix absolute paths in clang-tidy fixes file",
         default=".",
     )
     parser.add_argument(
-        "--fixes_file",
+        "--fixes-file",
         help="Path to pre-generated clang-tidy fixes file",
         default="",
     )
@@ -119,6 +121,11 @@ if __name__ == "__main__":
         default='`clang-tidy` found no issues, all clean :+1:',
     )
     parser.add_argument(
+        "--artifacts-dir",
+        help="Directory to save artifacts in",
+        default="",
+    )
+    parser.add_argument(
         "--dry-run", help="Run and generate review, but don't post", action="store_true"
     )
 
@@ -141,5 +148,6 @@ if __name__ == "__main__":
         exclude=exclude,
         max_comments=args.max_comments,
         lgtm_comment_body=strip_enclosing_quotes(args.lgtm_comment_body),
+        artifacts_dir=args.artifacts_dir,
         dry_run=args.dry_run
     )
