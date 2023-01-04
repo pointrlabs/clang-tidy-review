@@ -513,7 +513,7 @@ def create_review_file(
 ) -> Optional[PRReview]:
     """Create a Github review from a set of clang-tidy diagnostics"""
 
-    if "Diagnostics" not in clang_tidy_warnings:
+    if clang_tidy_warnings is None or "Diagnostics" not in clang_tidy_warnings:
         return None
 
     comments: List[PRReviewComment] = []
