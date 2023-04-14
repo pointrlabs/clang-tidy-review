@@ -118,6 +118,23 @@ class PullRequest:
             f"{self.base_url}/comments",
             None,
         )
+    
+    def get_issue_comments(self):
+        """Download the PR review comments using the comfort-fade preview headers"""
+
+        url = f"https://api.github.com/repos/{self.repo}/issues/{self.pr_number}/comments"
+
+        def get_element(
+            requester: Requester, headers: dict, element: dict, completed: bool
+        ):
+            return element
+
+        return PaginatedList(
+            get_element,
+            self._pull_request._requester,
+            url,
+            None,
+        )
 
     def post_lgtm_comment(self, body: str):
         """Post a "LGTM" comment if everything's clean, making sure not to spam"""
@@ -125,7 +142,7 @@ class PullRequest:
         if not body:
             return
 
-        comments = self.get_pr_comments()
+        comments = self.get_issue_comments()
 
         print("Will check for body:")
         print(body)
