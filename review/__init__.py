@@ -144,11 +144,7 @@ class PullRequest:
 
         comments = self.get_issue_comments()
 
-        print("Will check for body:")
-        print(body)
-        print("In existing comments:")
         for comment in comments:
-            print(comment["body"])
             if comment["body"] == body:
                 print("Already posted, no need to update")
                 return
