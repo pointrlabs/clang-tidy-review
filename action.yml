@@ -56,12 +56,12 @@ runs:
         python-version: '3.10'
     - name: Install Python dependencies
       shell: bash
-      run: pip install -r ${{ github.action_path }}/requirements.txt
+      run: pip install -r ${GITHUB_ACTION_PATH}/requirements.txt
     - name: Run clang-tidy review
       id: run-review
       shell: bash
       run: >-
-        ${{ github.action_path }}/review.py
+        ${GITHUB_ACTION_PATH}/review.py
         --repo=${{ inputs.repo }}
         --pr=${{ inputs.pr }}
         --token=${{ inputs.token }}
