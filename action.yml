@@ -14,6 +14,10 @@ inputs:
     description: 'GitHub authentication token'
     default: ${{ github.token }}
     required: false
+  working_dir:
+    description: 'Working directory'
+    default: ${{ github.workspace }}
+    required: false
   base_dir:
     description: 'Absolute path of initial working directory to fix absolute paths in clang-tidy fixes file'
     default: ${{ github.workspace }}
@@ -61,6 +65,7 @@ runs:
       id: run-review
       shell: bash
       run: >-
+        cd ${{ inputs.working_dir }} &&
         ${GITHUB_ACTION_PATH}/review.py
         --repo=${{ inputs.repo }}
         --pr=${{ inputs.pr }}
