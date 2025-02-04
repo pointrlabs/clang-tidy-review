@@ -215,7 +215,7 @@ jobs:
       with:
         split_workflow: true
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: clang-tidy-review
         path: |
